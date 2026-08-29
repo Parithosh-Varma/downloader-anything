@@ -194,20 +194,31 @@ async function fetchInfo() {
     // update badge if we learned mode
     if (data._source) apiStatus.textContent = `via ${data._source}`;
   } catch (e) {
-    const msg = e.message || String(e);
+    const data = e.data || {};
+    let msg = e.message || String(e);
+    // Detect bot / login errors and make them actionable
+    const isBot = /Sign in to confirm|bot|login required|rate-limit|private/i.test(msg) || /bot|login/i.test(JSON.stringify(data));
+    if (isBot) {
+      msg = msg.includes("Sign in to confirm") ? "YouTube is blocking datacenter IPs (Vercel/Render/Cloudflare). This is a YouTube bot-check, not a bug." : msg;
+    }
     errorMsg.textContent = msg;
-    if (e.hint) {
-      errorHint.textContent = e.hint;
-      errorHint.classList.remove("hidden");
-    } else if (e.data && e.data.hint) {
-      errorHint.textContent = e.data.hint;
+    let hint = e.hint || data.hint || data.docs || "";
+    if (isBot) {
+      hint = "Try a public SoundCloud link (works on edge) e.g. https://soundcloud.com/lifeofdesiigner/desiigner-panda — or run locally for YouTube: `pip install yt-dlp && yt-dlp --extractor-args 'youtube:player_client=android,web' 'YOUR_URL'`. For Instagram/TikTok private content, yt-dlp needs cookies — see README. The Render/Vercel yt-dlp server is also datacenter-flagged for YouTube; local residential IP works for 240p.";
+    } else if (data._note) {
+      hint = data._note;
+    } else if (data._requires_server) {
+      hint = "No formats via edge. For full 1800+ sites, the yt-dlp server is at https://downloader-anything-yt-dlp.onrender.com (Singapore) — it works for SoundCloud etc, but YouTube still needs local residential IP due to bot checks. Try SoundCloud example above.";
+    }
+    if (hint) {
+      errorHint.textContent = hint;
       errorHint.classList.remove("hidden");
     } else {
       errorHint.classList.add("hidden");
     }
-    // Include raw if 501 with requires server
-    if (e.data && e.data._requires_server) {
-      errorHint.textContent = "Deploy server/ (see README) and set YT_DLP_API_URL in wrangler.toml, then redeploy Worker for full support.";
+    // Also show note if present
+    if (data._note && !hint.includes(data._note)) {
+      errorHint.textContent += (hint ? "\n\n" : "") + data._note;
       errorHint.classList.remove("hidden");
     }
     showState(stateError);
@@ -250,7 +261,11 @@ function renderFormats() {
   formatList.innerHTML = "";
 
   if (all.length === 0) {
-    formatList.innerHTML = `<div class="rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-xs text-amber-200">No downloadable formats returned. ${lastInfo._note || "This site may need the yt-dlp server (deploy server/ and set YT_DLP_API_URL). YouTube works standalone."}</div>`;
+    const note = lastInfo._note || "";
+    const isBotNote = /bot|Sign in|login|private/i.test(note) || /cobalt|html/i.test(lastInfo._source||"");
+    const help = note ? `<div class="mt-2 text-[11px] leading-relaxed opacity-90">${note}</div>` : "";
+    const botHelp = isBotNote ? `<div class="mt-2 text-[11px] leading-relaxed">YouTube blocks datacenter IPs. <span class="text-white font-medium">Try SoundCloud:</span> <a href="#" onclick="document.getElementById('urlInput').value='https://soundcloud.com/lifeofdesiigner/desiigner-panda'; document.getElementById('fetchBtn').click(); return false;" class="underline">SoundCloud example</a> (works) — or run locally: <code class="px-1 py-0.5 rounded bg-black/30 font-mono">pip install yt-dlp && yt-dlp --extractor-args 'youtube:player_client=android,web' 'URL'</code></div>` : "";
+    formatList.innerHTML = `<div class="rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-xs text-amber-200"><div class="font-semibold">No downloadable formats.</div>${help}${botHelp || `<div class="mt-2 text-[11px] opacity-80">This link returned metadata but no direct URLs. It may be private/geo-blocked, or need cookies. Try a public YouTube/SoundCloud link.</div>`}</div>`;
     return;
   }
   if (filtered.length === 0) {

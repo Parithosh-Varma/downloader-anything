@@ -465,12 +465,23 @@ app.post("/api/info", async (c) => {
       });
       if (proxied && proxied.ok) {
         const data = await proxied.json();
+        // If proxied returned 0 formats due to bot, still return it (frontend will show helpful note)
         return c.json(data);
       }
       if (proxied) {
-        const err = await proxied.text();
-        // fall through to local extraction if proxy fails
-        console.warn("yt-dlp server failed:", proxied.status, err);
+        const errText = await proxied.text();
+        console.warn("yt-dlp server failed:", proxied.status, errText);
+        // If bot / login error, return it directly so frontend shows actionable hint instead of oEmbed
+        if (/Sign in to confirm|bot|login required|rate-limit/i.test(errText)) {
+          let detail = errText;
+          try { detail = JSON.parse(errText).detail || detail; } catch {}
+          return jsonError(c, detail.slice(0, 600), 400, {
+            hint: "YouTube blocks datacenter IPs. Try SoundCloud example (works on edge) or run locally: `pip install yt-dlp && yt-dlp --extractor-args 'youtube:player_client=android,web' 'URL'`",
+            _source: "yt-dlp (proxied, bot-blocked)",
+            _requires_server: false,
+          });
+        }
+        // otherwise fall through to local extraction
       }
     } catch (e: any) {
       console.warn("proxy error", e.message);

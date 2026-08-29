@@ -142,7 +142,11 @@ def api_info(req: InfoRequest):
             "_yt_dlp_version": yt_dlp.version.__version__,
         }
     except yt_dlp.utils.DownloadError as e:
-        raise HTTPException(400, f"yt-dlp error: {str(e)[:500]}")
+        msg = str(e)[:600]
+        # Detect bot / login errors and make them actionable
+        if "Sign in to confirm" in msg or "bot" in msg.lower():
+            msg = f"YouTube bot-check from datacenter IP (Render/Vercel/Cloudflare flagged). Try locally on residential IP: pip install yt-dlp && yt-dlp --extractor-args 'youtube:player_client=android,web' '{req.url}' — Original: {msg}"
+        raise HTTPException(400, f"yt-dlp error: {msg}")
     except Exception as e:
         raise HTTPException(500, f"Extraction failed: {str(e)[:500]}")
 
