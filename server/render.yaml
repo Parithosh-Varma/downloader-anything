@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: downloader-anything-yt-dlp
+    env: docker
+    dockerfilePath: ./server/Dockerfile
+    plan: starter
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 8000

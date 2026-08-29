@@ -1,0 +1,10 @@
+name = "downloader-anything-python"
+main = "src/entry.py"
+compatibility_date = "2026-08-29"
+compatibility_flags = ["python_workers", "nodejs_compat"]
+
+[vars]
+ALLOWED_ORIGIN = "*"
+
+[observability]
+enabled = true

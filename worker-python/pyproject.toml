@@ -1,0 +1,21 @@
+[project]
+name = "downloader-anything-python"
+version = "1.0.0"
+description = "Python Worker with yt-dlp (100% Cloudflare)"
+requires-python = ">=3.11"
+dependencies = [
+    "yt-dlp",
+    "workers-runtime-sdk"
+]
+
+[dependency-groups]
+dev = [
+    "workers-py",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.workers-py]
+# optional, used by pywrangler

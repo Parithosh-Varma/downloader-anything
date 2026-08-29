@@ -1,0 +1,20 @@
+name = "downloader-anything"
+main = "src/index.ts"
+compatibility_date = "2026-08-29"
+compatibility_flags = ["nodejs_compat"]
+
+# Assets for serving frontend directly from Worker (optional, Pages is primary)
+# [assets]
+# directory = "./frontend"
+# not_found_handling = "single-page-application"
+
+[vars]
+# yt-dlp server for full site support (SoundCloud, TikTok, etc). YouTube falls back to HTML/Innertube on edge.
+# Vercel-hosted yt-dlp (free, no ffmpeg) — works for SoundCloud, some others; YouTube via edge HTML fallback
+YT_DLP_API_URL = "https://vercel-yt-three.vercel.app"
+
+# CORS - set to your Pages domain in production
+ALLOWED_ORIGIN = "*"
+
+[observability]
+enabled = true
